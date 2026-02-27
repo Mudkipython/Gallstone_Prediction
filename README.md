@@ -7,6 +7,7 @@ Notebook-first clinical ML showcase for **non-imaging gallstone risk prediction*
 - An English Streamlit Web App for interactive risk estimation.
 - Dockerized runtime for portable execution.
 - Basic engineering quality gates (`ruff`, `mypy`, `pytest`).
+- Notebook-aligned private-clinic feature policy with engineered lipid ratios.
 
 ## Learning Outcomes
 - Build a reproducible ML workflow with modern Python tooling (`uv`, `ruff`, `mypy`, `pytest`).
@@ -52,6 +53,10 @@ make webapp
 ```
 Open: `http://localhost:8501`
 
+The app follows the updated notebook policy:
+- engineered features: `LDL_to_HDL`, `TC_to_HDL`, `TG_to_HDL`, `Age_x_BMI`
+- excluded leakage features: `AST`, `ALT`, `ALP`, `CRP`, `AST_to_ALT`
+
 ## Script Entry Point (Explicit Timeout)
 ```bash
 uv run python scripts/run_notebook.py \
@@ -87,6 +92,9 @@ Because this project has a Docker image, it can be deployed to container platfor
 ## Common Issues
 - Missing dependencies: run `make sync`.
 - Missing dataset: verify `data/raw/gallstone.csv` exists.
+- Notebook currently uses `DATA_PATH='gallstone.csv'`:
+  - `make notebook` auto-creates a compatibility symlink at repo root.
+  - `make run` handles compatibility automatically in `scripts/run_notebook.py`.
 - Notebook timeout on slower hardware:
   - default is `NOTEBOOK_TIMEOUT=1800`
   - override with `make run NOTEBOOK_TIMEOUT=2400`

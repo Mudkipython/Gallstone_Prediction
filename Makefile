@@ -28,6 +28,7 @@ run:
 	uv run python scripts/run_notebook.py --notebook $(NOTEBOOK) --output $(EXEC_NOTEBOOK) --timeout $(NOTEBOOK_TIMEOUT)
 
 notebook:
+	@if [ ! -f gallstone.csv ] && [ -f data/raw/gallstone.csv ]; then ln -s data/raw/gallstone.csv gallstone.csv; fi
 	uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token='' --ServerApp.password=''
 
 webapp:

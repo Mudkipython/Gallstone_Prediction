@@ -16,11 +16,50 @@ from gallstone_showcase.paths import data_csv_path
 
 TARGET_COL = "Gallstone Status"
 LEAKAGE_EXCLUDE = {
+    "AST_to_ALT",
     "Aspartat Aminotransferaz (AST)",
     "Alanin Aminotransferaz (ALT)",
     "Alkaline Phosphatase (ALP)",
     "C-Reactive Protein (CRP)",
 }
+CLINIC_BASE_FEATURES = [
+    "Age",
+    "Gender",
+    "Comorbidity",
+    "Coronary Artery Disease (CAD)",
+    "Hypothyroidism",
+    "Hyperlipidemia",
+    "Diabetes Mellitus (DM)",
+    "Height",
+    "Weight",
+    "Body Mass Index (BMI)",
+    "Total Body Water (TBW)",
+    "Extracellular Water (ECW)",
+    "Intracellular Water (ICW)",
+    "Extracellular Fluid/Total Body Water (ECF/TBW)",
+    "Total Body Fat Ratio (TBFR) (%)",
+    "Lean Mass (LM) (%)",
+    "Body Protein Content (Protein) (%)",
+    "Visceral Fat Rating (VFR)",
+    "Bone Mass (BM)",
+    "Muscle Mass (MM)",
+    "Obesity (%)",
+    "Total Fat Content (TFC)",
+    "Visceral Fat Area (VFA)",
+    "Visceral Muscle Area (VMA) (Kg)",
+    "Hepatic Fat Accumulation (HFA)",
+    "Glucose",
+    "Total Cholesterol (TC)",
+    "Low Density Lipoprotein (LDL)",
+    "High Density Lipoprotein (HDL)",
+    "Triglyceride",
+    "Creatinine",
+    "Glomerular Filtration Rate (GFR)",
+    "Hemoglobin (HGB)",
+    "Vitamin D",
+]
+ENGINEERED_CANDIDATES = ["LDL_to_HDL", "TC_to_HDL", "TG_to_HDL", "Age_x_BMI"]
+RATIO_EPS = 1e-6
 
 
 @dataclass(frozen=True)
@@ -43,27 +82,57 @@ def _coerce_numeric(frame: pd.DataFrame) -> pd.DataFrame:
     return converted
 
 
+def _apply_feature_engineering(frame: pd.DataFrame) -> pd.DataFrame:
+    """Apply notebook-aligned engineered features to frame."""
+    engineered = frame.copy()
+
+    if (
+        "Low Density Lipoprotein (LDL)" in engineered
+        and "High Density Lipoprotein (HDL)" in engineered
+    ):
+        engineered["LDL_to_HDL"] = (
+            engineered["Low Density Lipoprotein (LDL)"]
+            / (engineered["High Density Lipoprotein (HDL)"] + RATIO_EPS)
+        )
+    if "Total Cholesterol (TC)" in engineered and "High Density Lipoprotein (HDL)" in engineered:
+        engineered["TC_to_HDL"] = (
+            engineered["Total Cholesterol (TC)"]
+            / (engineered["High Density Lipoprotein (HDL)"] + RATIO_EPS)
+        )
+    if "Triglyceride" in engineered and "High Density Lipoprotein (HDL)" in engineered:
+        engineered["TG_to_HDL"] = engineered["Triglyceride"] / (
+            engineered["High Density Lipoprotein (HDL)"] + RATIO_EPS
+        )
+    if (
+        "Aspartat Aminotransferaz (AST)" in engineered
+        and "Alanin Aminotransferaz (ALT)" in engineered
+    ):
+        engineered["AST_to_ALT"] = engineered["Aspartat Aminotransferaz (AST)"] / (
+            engineered["Alanin Aminotransferaz (ALT)"] + RATIO_EPS
+        )
+    if "Age" in engineered and "Body Mass Index (BMI)" in engineered:
+        engineered["Age_x_BMI"] = engineered["Age"] * engineered["Body Mass Index (BMI)"]
+
+    return engineered
+
+
 def load_training_data() -> pd.DataFrame:
     """Load source CSV for model training."""
     return pd.read_csv(data_csv_path())
 
 
 def select_feature_columns(frame: pd.DataFrame) -> list[str]:
-    """Return non-leakage feature columns used for prediction."""
-    cols: list[str] = []
-    for col in frame.columns:
-        if col == TARGET_COL:
-            continue
-        if col in LEAKAGE_EXCLUDE:
-            continue
-        cols.append(col)
-    return cols
+    """Return notebook-aligned private-clinic feature set."""
+    base_existing = [c for c in CLINIC_BASE_FEATURES if c in frame.columns]
+    engineered_existing = [c for c in ENGINEERED_CANDIDATES if c in frame.columns]
+    selected = base_existing + engineered_existing
+    return [c for c in selected if c not in LEAKAGE_EXCLUDE]
 
 
-def train_bundle(random_state: int = 42) -> ModelBundle:
+def train_bundle(random_state: int = 16) -> ModelBundle:
     """Train a logistic pipeline and return metadata for inference."""
     raw = load_training_data()
-    frame = _coerce_numeric(raw)
+    frame = _apply_feature_engineering(_coerce_numeric(raw))
 
     if TARGET_COL not in frame.columns:
         raise ValueError(f"Missing target column: {TARGET_COL}")
@@ -104,7 +173,8 @@ def train_bundle(random_state: int = 42) -> ModelBundle:
 
 def predict_risk(bundle: ModelBundle, row: pd.DataFrame) -> float:
     """Return risk probability for a single row dataframe."""
-    aligned = row.reindex(columns=bundle.feature_columns)
+    prepared = _apply_feature_engineering(_coerce_numeric(row.copy()))
+    aligned = prepared.reindex(columns=bundle.feature_columns)
     score = bundle.model.predict_proba(aligned)[:, 1][0]
     return float(score)
 

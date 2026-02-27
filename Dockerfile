@@ -23,4 +23,4 @@ RUN uv sync --frozen --extra dev
 
 EXPOSE 8888
 
-CMD ["uv", "run", "jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--ServerApp.token=", "--ServerApp.password="]
+CMD ["bash", "-lc", "if [ ! -f /workspace/gallstone.csv ] && [ -f /workspace/data/raw/gallstone.csv ]; then ln -s /workspace/data/raw/gallstone.csv /workspace/gallstone.csv; fi && uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --ServerApp.token= --ServerApp.password="]

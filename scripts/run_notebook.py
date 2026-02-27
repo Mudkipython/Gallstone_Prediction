@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 from pathlib import Path
 
 import nbformat
@@ -32,15 +33,29 @@ def main() -> None:
         output = root / output
 
     output.parent.mkdir(parents=True, exist_ok=True)
+    legacy_data = root / "gallstone.csv"
+    canonical_data = root / "data" / "raw" / "gallstone.csv"
+    created_legacy = False
 
-    with notebook.open("r", encoding="utf-8") as handle:
-        nb = nbformat.read(handle, as_version=4)
+    if not legacy_data.exists() and canonical_data.exists():
+        try:
+            legacy_data.symlink_to(canonical_data.relative_to(root))
+        except OSError:
+            shutil.copy2(canonical_data, legacy_data)
+        created_legacy = True
 
-    client = NotebookClient(nb, timeout=args.timeout, kernel_name="python3")
-    client.execute(cwd=str(root))
+    try:
+        with notebook.open("r", encoding="utf-8") as handle:
+            nb = nbformat.read(handle, as_version=4)
 
-    with output.open("w", encoding="utf-8") as handle:
-        nbformat.write(nb, handle)
+        client = NotebookClient(nb, timeout=args.timeout, kernel_name="python3")
+        client.execute(cwd=str(root))
+
+        with output.open("w", encoding="utf-8") as handle:
+            nbformat.write(nb, handle)
+    finally:
+        if created_legacy and legacy_data.exists():
+            legacy_data.unlink()
 
 
 if __name__ == "__main__":

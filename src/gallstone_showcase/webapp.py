@@ -12,6 +12,9 @@ st.set_page_config(page_title="Gallstone Risk App", page_icon="🩺", layout="wi
 KEY_FIELDS = [
     "Age",
     "Gender",
+    "Comorbidity",
+    "Hyperlipidemia",
+    "Diabetes Mellitus (DM)",
     "Body Mass Index (BMI)",
     "Glucose",
     "Total Cholesterol (TC)",
@@ -45,12 +48,17 @@ def _build_input_form(bundle: ModelBundle) -> pd.DataFrame:
         max_value = float(bundle.feature_max[field])
 
         with col:
-            if field == "Gender":
+            is_binary = min_value >= 0.0 and max_value <= 1.0
+            if is_binary:
                 base.loc[0, field] = st.selectbox(
-                    "Gender",
+                    field,
                     options=[0, 1],
                     index=int(round(default)),
-                    format_func=lambda x: "Female (0)" if x == 0 else "Male (1)",
+                    format_func=(
+                        (lambda x: "Female (0)" if x == 0 else "Male (1)")
+                        if field == "Gender"
+                        else (lambda x: "No (0)" if x == 0 else "Yes (1)")
+                    ),
                 )
             else:
                 base.loc[0, field] = st.number_input(
@@ -95,7 +103,8 @@ def main() -> None:
         st.write(
             "- Model: Logistic Regression with median imputation and standard scaling"
             "\n- Training data: local `data/raw/gallstone.csv`"
-            "\n- Leakage variables excluded: AST, ALT, ALP, CRP"
+            "\n- Engineered features: LDL/HDL, TC/HDL, TG/HDL, Age×BMI"
+            "\n- Leakage variables excluded: AST, ALT, ALP, CRP, AST/ALT"
         )
 
 
