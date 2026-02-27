@@ -47,7 +47,7 @@ make notebook
 ```
 Open: `http://localhost:8888`
 
-### 2) Web App (Streamlit, English)
+### 2) Web App (Streamlit)
 ```bash
 make webapp
 ```
