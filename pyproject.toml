@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gallstone-showcase"
+version = "0.1.0"
+description = "Notebook-first gallstone risk prediction showcase with reproducible tooling."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ipykernel>=6.29.5",
+  "jupyterlab>=4.3.0",
+  "lightgbm>=4.6.0",
+  "matplotlib>=3.10.0",
+  "nbclient>=0.10.2",
+  "nbformat>=5.10.4",
+  "numpy>=2.2.0",
+  "pandas>=2.2.0",
+  "scikit-learn>=1.6.0",
+  "scipy>=1.15.0",
+  "seaborn>=0.13.2",
+  "shap>=0.47.0",
+  "statsmodels>=0.14.4",
+  "xgboost>=2.1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.15.0",
+  "pytest>=8.3.0",
+  "ruff>=0.12.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gallstone_showcase"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+include = ["*.ipynb", "src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["E402", "E501", "F401", "F811", "I001", "B905", "UP032"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+mypy_path = "src"
+files = ["src", "scripts", "tests"]

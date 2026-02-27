@@ -1,46 +1,73 @@
-# Gallstone Risk Prediction for Private Clinic Checkups
+# Gallstone Risk Prediction Showcase
 
-## Project Overview
-This project focuses on building a **non-imaging gallstone risk prediction model** using routine clinical checkup variables. The primary objective is to provide an early triage tool for private clinics, where gallbladder imaging (e.g., ultrasound) is often not immediately available at the first visit.
+Notebook-first clinical ML showcase for non-imaging gallstone risk prediction using routine checkup variables.
 
-The model outputs a risk probability to prioritize patients for screening, serving as a support tool rather than a diagnostic replacement.
+## Learning Outcomes
+- Build a reproducible notebook workflow with modern Python project tooling (`uv`, `ruff`, `mypy`, `pytest`).
+- Train and compare multiple binary classifiers for gallstone risk stratification.
+- Preserve interpretable analysis outputs (calibration, SHAP, subgroup diagnostics) in a reproducible structure.
 
-## Dataset & Clinical Scope
-The dataset includes clinical data for 319 individuals, with a balanced distribution of the target variable (`Gallstone Status`). Features are categorized into three groups:
-1.  **Demographics**: Age, sex, height, weight, BMI.
-2.  **Body Composition**: TBW, ECW, ICW, VFA, HFA, etc.
-3.  **Laboratory Markers**: Glucose, Lipids (TC, LDL, HDL, TG), Creatinine, Hemoglobin, Vitamin D.
+## Prerequisites
+- Python 3.12
+- `uv` 0.10+
+- Optional: Docker 29+
 
-### Leakage Control
-To ensure real-world applicability, "leakage" variables (features typically measured *after* diagnosis or directly related to symptomatic presentation like CRP, AST, ALT, ALP) were strictly excluded from the predictive pool. Only routine checkup variables are used.
+## Project Structure
+- `notebooks/gallstone_final_project.ipynb`: primary analysis notebook.
+- `data/raw/gallstone.csv`: source dataset.
+- `scripts/run_notebook.py`: headless notebook execution entrypoint.
+- `scripts/smoke_check.py`: quick dependency/data validation.
+- `src/gallstone_showcase/`: lightweight path utilities for stable execution contexts.
+- `artifacts/`: generated outputs (executed notebooks and derived files).
+- `docs/presentation.pdf`: project presentation deck.
 
-## Methodology
-The analysis follows a rigorous clinical data science pipeline:
+## Quickstart
+```bash
+make sync
+make smoke
+make run
+```
 
-1.  **Data Quality & Integrity**: Verification of target availability, missing values, and duplicates.
-2.  **Clinical Feature Engineering**: Creation of metabolically informative ratios (e.g., LDL/HDL, TG/HDL, Age × BMI interaction).
-3.  **Collinearity Diagnostics**: Analysis of multicollinearity among body composition variables using Variance Inflation Factor (VIF).
-4.  **Feature Selection**: Recursive Feature Elimination (RFECV) and Mutual Information to select the most predictive subset.
-5.  **Model Benchmarking**: Comparison of several architectures:
-    *   Logistic Regression (Linear baseline)
-    *   Random Forest
-    *   XGBoost
-    *   LightGBM (HistGradientBoosting)
-6.  **Calibration & Diagnostics**: Probability calibration (Brier Score), subgroup analysis, and uncertainty estimation via bootstrapping.
-7.  **Interpretation**: Global and local feature importance via SHAP (SHapley Additive exPlanations) to provide clinical transparency.
+To launch Jupyter Lab:
+```bash
+make notebook
+```
 
-## Key Findings
-- **Predictive Power**: The model achieves significant separation using non-imaging markers alone.
-- **Top Predictors**: SHAP analysis highlights metabolic markers and age-related interactions as key drivers of gallstone risk.
-- **Calibration**: The model is well-calibrated, ensuring predicted probabilities align with actual observed frequencies.
+Script entrypoint (explicit timeout):
+```bash
+uv run python scripts/run_notebook.py --notebook notebooks/gallstone_final_project.ipynb --output artifacts/notebooks/gallstone_final_project.executed.ipynb --timeout 600
+```
 
-## Technologies Used
-- **Language**: Python 3.x
-- **Libraries**:
-    - Machine Learning: `scikit-learn`, `xgboost`, `lightgbm`
-    - Interpretation: `shap`
-    - Analysis: `pandas`, `numpy`, `scipy`
-    - Visualization: `matplotlib`, `seaborn`
+## Quality Gates
+```bash
+make ruff
+make ty
+make test
+make check
+```
 
-## Usage
-To reproduce the results, ensure you have the `gallstone.csv` dataset in the project root and run the `gallstone_project_new.ipynb` notebook.
+## Docker Runtime
+Build image:
+```bash
+make docker-build
+```
+
+Run Jupyter in container:
+```bash
+make docker-run
+```
+
+Then open `http://localhost:8888`.
+
+## Key Artifacts
+- `artifacts/notebooks/gallstone_final_project.executed.ipynb`: executed notebook output from `make run`.
+
+## Common Failure Modes
+- Missing dependencies: run `make sync` again.
+- Missing dataset: confirm `data/raw/gallstone.csv` exists.
+- Notebook timeout on slower hardware: increase `--timeout` in `scripts/run_notebook.py` invocation.
+- `make run` uses `NOTEBOOK_TIMEOUT` (default `1800`); override with `make run NOTEBOOK_TIMEOUT=600` if needed.
+
+## Suggested Next Steps
+- Extract reusable preprocessing/model-evaluation logic from notebook into `src/gallstone_showcase/`.
+- Add explicit artifact verification script and manifest for stricter contract checks.
