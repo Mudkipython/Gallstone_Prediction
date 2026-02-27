@@ -5,13 +5,14 @@ NOTEBOOK := notebooks/gallstone_final_project.ipynb
 EXEC_NOTEBOOK := artifacts/notebooks/gallstone_final_project.executed.ipynb
 NOTEBOOK_TIMEOUT ?= 1800
 
-.PHONY: help sync run notebook smoke ruff test ty check docker-build docker-run
+.PHONY: help sync run notebook webapp smoke ruff test ty check docker-build docker-run
 
 help:
 	@echo "Gallstone Showcase"
 	@echo "  make sync         Install dependencies with uv"
 	@echo "  make run          Execute notebook headlessly"
 	@echo "  make notebook     Launch Jupyter Lab"
+	@echo "  make webapp       Launch Streamlit web app"
 	@echo "  make smoke        Run lightweight data/import checks"
 	@echo "  make ruff         Run Ruff lint checks"
 	@echo "  make test         Run pytest"
@@ -28,6 +29,9 @@ run:
 
 notebook:
 	uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token='' --ServerApp.password=''
+
+webapp:
+	uv run streamlit run src/gallstone_showcase/webapp.py
 
 smoke:
 	uv run python scripts/smoke_check.py
